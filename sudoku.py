@@ -24,7 +24,6 @@ class SudokuPuzzle:
                     row = []
             if (len(self.__data) != 9):
                 raise Exception('puzzle does not have 9 rows')
-            self.resultDict = {}
 
     def solved(self):
         if (not self.is_valid()):
@@ -80,7 +79,7 @@ class SudokuPuzzle:
     def __getitem__(self, key):
         return self.__data[key]
 
-    def get_reduction(self):
+    def get_possibilities(self):
         ''' Create a dictionary indexed by cell coordinates and a list of possible values. If a cell has a list of size 1, that cell is "solved"
             Look at puzzle and find solved cells.
             Look at all rows and remove solved cell values from cell lists in same row
@@ -151,9 +150,6 @@ class SudokuPuzzle:
                                 before = ls[:]
                                 ls.remove(result)
                                 #print('sector[{},{}]@({},{}) ({}, {}) {} : {} remove {} ==> {}'.format(i, j, r, c, x, y, self[x][y], before, result, ls))
-        #for coord, ls in __resultDict.items():
-        #    print('({},{}) {} -> {}'.format(coord[0], coord[1], self[coord[0]][coord[1]], ls))
-        #self.resultDict = __resultDict
         # look at rows, columns, sectors and see if any particular number has only one possible position
         # rows
         for ridx, row in enumerate(self.__data):
@@ -239,15 +235,15 @@ def GuessAndCheck(puzzle:SudokuPuzzle):
     
     if (puzzle.solved()):
         return True
-    res = puzzle.get_reduction()
+    elif (not puzzle.is_valid()):
+        return False
+    res = puzzle.get_possibilities()
 
     # if there are no possibilities for an unsolved cell, we have failed
     for coord, ls in res.items():
         if (puzzle[coord[0]][coord[1]] == 0) and len(ls) == 0:
-            return False
+            return False    
 
-    if (len(res) == 0):
-        return False
     solved = {coord: ls[0] for coord, ls in res.items() if len(ls) == 1}
     while (len(solved) > 0):
         for coord, n in solved.items():
@@ -255,12 +251,7 @@ def GuessAndCheck(puzzle:SudokuPuzzle):
         # invalid "solutions" may exist in the results list: this can happen because after trying to reduce the puzzle, there is no way to avoid a conflict
         if (not puzzle.is_valid()):
             return False
-        res = puzzle.get_reduction()
-        #if (len(res) == 0):
-        #    if (puzzle.solved()):
-        #        return True
-        #    else:
-        #        return False
+        res = puzzle.get_possibilities()
         solved = {coord: ls[0] for coord, ls in res.items() if len(ls) == 1}
 
     sorted_res = []
@@ -275,13 +266,15 @@ def GuessAndCheck(puzzle:SudokuPuzzle):
         ls    = cls[1]
         for poss in ls:
             tmp[coord[0]][coord[1]] = poss
-            if (not GuessAndCheck(tmp)):
+            if (not tmp.is_valid()):
+                continue
+            elif not GuessAndCheck(tmp):
                 continue
             else:
                 puzzle.assign(tmp)
-                return True
-    
+                return True    
     return False
+
 
 def main():
     
@@ -300,17 +293,14 @@ def main():
         
     if (puzzle == None):
         raise Exception('failed to initialize puzzle from file')
-
+    
+    print('')
     puzzle.print()
-
     GuessAndCheck(puzzle)
-
+    print('')
     print ('---------------- solution ----------------')
-
+    print('')
     puzzle.print()
-        
-
-    return
 
 if (__name__ == "__main__"):
     main()
