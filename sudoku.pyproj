@@ -27,6 +27,7 @@
     <Compile Include="sudoku.py" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Inkala_2010.txt" />
     <Content Include="Inkala_2006.txt" />
     <Content Include="sudoku_puzzle_1.txt" />
     <Content Include="sudoku_puzzle_2.txt" />

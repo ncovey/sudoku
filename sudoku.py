@@ -195,10 +195,7 @@ class SudokuPuzzle:
                         if (n not in self.row(x)) and (n not in self.col(y)):
                             #print('{} is unique to cell {} : {}'.format(n, (x, y), __resultDict.get((x, y))))
                             __resultDict[(x, y)] = [n]
-        # remove empty entries
-        #keys = [k for k, v in __resultDict.items() if len(v) == 0]
-        #for x in keys:
-        #    del __resultDict[x]        
+
         return __resultDict
 
     def is_valid(self):
@@ -237,6 +234,7 @@ def GuessAndCheck(puzzle:SudokuPuzzle):
         return True
     elif (not puzzle.is_valid()):
         return False
+
     res = puzzle.get_possibilities()
 
     # if there are no possibilities for an unsolved cell, we have failed
@@ -251,8 +249,13 @@ def GuessAndCheck(puzzle:SudokuPuzzle):
         # invalid "solutions" may exist in the results list: this can happen because after trying to reduce the puzzle, there is no way to avoid a conflict
         if (not puzzle.is_valid()):
             return False
+        elif (puzzle.solved()):
+            return True
         res = puzzle.get_possibilities()
         solved = {coord: ls[0] for coord, ls in res.items() if len(ls) == 1}
+
+    print('')
+    puzzle.print()
 
     sorted_res = []
     for k in sorted(res, key=lambda k: len(res.get(k))):
@@ -260,15 +263,28 @@ def GuessAndCheck(puzzle:SudokuPuzzle):
 
     tmp = SudokuPuzzle()
     tmp.assign(puzzle)
+    
+    # Barbara's method:
+    # find a sector with the most solved cells. for every row and column common to that sector, look for binary choices:
+    #       0 1 2   3 4 5   6 7 8
+    #     +-------+-------+-------
+    # [6] | . . . | 6 . 3 | . 7 .
+    # [7] | 5 . 3 | 2 . 1 | . . .
+    # [8] | 1 . 4 | . . . | . . . 
+    #
+    # for cells (6,4) and (7,4) we can deduce that because the left-most sector has a '4' in (8,2), there can not be
+    # any 4's in (8,3), (8,4), or (8,5). After we do a depth first search after making an assumption (i.e., (7,4) we assume is 4),
+    # and we reach a fail-state (without making further assumptions), because (7,4) cannot be 4, (6,4) MUST be 4.
+    # If we do reach a fail-state without making further assumptions, we can safely eliminate the last assumption
 
     for cls in sorted_res:
         coord = cls[0]
         ls    = cls[1]
+        ##### Make Assumption: #####
         for poss in ls:
+            tmp.assign(puzzle)
             tmp[coord[0]][coord[1]] = poss
-            if (not tmp.is_valid()):
-                continue
-            elif not GuessAndCheck(tmp):
+            if (not GuessAndCheck(tmp)):
                 continue
             else:
                 puzzle.assign(tmp)
