@@ -12,7 +12,7 @@
     <Name>sudoku</Name>
     <RootNamespace>sudoku</RootNamespace>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
-    <CommandLineArguments>sudoku_puzzle_easy.txt</CommandLineArguments>
+    <CommandLineArguments>Inkala_ai_wormhole.txt</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -27,6 +27,7 @@
     <Compile Include="sudoku.py" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Inkala_ai_wormhole.txt" />
     <Content Include="Inkala_2010.txt" />
     <Content Include="Inkala_2006.txt" />
     <Content Include="sudoku_puzzle_1.txt" />
