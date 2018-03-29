@@ -228,14 +228,15 @@ class SudokuPuzzle:
                 self.__data[ridx].append(itm)
 
 
-def GuessAndCheck(puzzle:SudokuPuzzle):
+def GuessAndCheck(puzzle:SudokuPuzzle, res:dict={}):
     
     if (puzzle.solved()):
         return True
     elif (not puzzle.is_valid()):
         return False
 
-    res = puzzle.get_possibilities()
+    if (not res):
+        res = puzzle.get_possibilities()
 
     # if there are no possibilities for an unsolved cell, we have failed
     for coord, ls in res.items():
@@ -246,12 +247,13 @@ def GuessAndCheck(puzzle:SudokuPuzzle):
     while (len(solved) > 0):
         for coord, n in solved.items():
             puzzle[coord[0]][coord[1]] = n
+            res[coord].remove(n)
         # invalid "solutions" may exist in the results list: this can happen because after trying to reduce the puzzle, there is no way to avoid a conflict
         if (not puzzle.is_valid()):
             return False
         elif (puzzle.solved()):
             return True
-        res = puzzle.get_possibilities()
+        #res = puzzle.get_possibilities()
         solved = {coord: ls[0] for coord, ls in res.items() if len(ls) == 1}
 
     print('')
@@ -278,16 +280,54 @@ def GuessAndCheck(puzzle:SudokuPuzzle):
     # If we do reach a fail-state without making further assumptions, we can safely eliminate the last assumption
 
     for cls in sorted_res:
+        if (not cls[1]):
+            continue
         coord = cls[0]
         ls    = cls[1]
         ##### Make Assumption: #####
         for poss in ls:
-            tmp.assign(puzzle)
             tmp[coord[0]][coord[1]] = poss
             if (not GuessAndCheck(tmp)):
+                tmp.assign(puzzle) # undo changes
+                ls.remove(poss)
+                # look at rows:
+                countdict = {key: [] for key in range(1, 10)}
+                for i, rcell in enumerate(tmp.row(coord[0])):
+                    _coord = (coord[0], i)
+                    l = res.get(_coord)
+                    for n in l:
+                        if (_coord != (coord)) or n != poss:
+                            countdict[n].append(_coord)
+                for n, d in countdict.items():
+                    if len(d) is 1:
+                        tmp[d[0][0]][d[0][1]] = n
+                countdict = {key: [] for key in range(1, 10)}
+                for i, ccell in enumerate(tmp.col(coord[1])):
+                    _coord = (i, coord[1])
+                    l = res.get(_coord)
+                    for n in l:
+                        if (_coord != (coord)) or n != poss:
+                            countdict[n].append(_coord)
+                for n, d in countdict.items():
+                    if len(d) is 1:
+                        tmp[d[0][0]][d[0][1]] = n
+                countdict = {key: [] for key in range(1, 10)}
+                rsector, csector = (int(coord[0]/3), int(coord[1]/3))
+                sector = tmp.sector(rsector, csector)
+                for r, scell in enumerate(sector):
+                    for c, cell in enumerate(scell):
+                        _coord = (rsector*3+r, csector*3+c)
+                        l = res.get(_coord)
+                        for n in l:
+                            if (_coord != (coord)) or n != poss:
+                                countdict[n].append(_coord)
+                for n, d in countdict.items():
+                    if len(d) is 1:
+                        tmp[d[0][0]][d[0][1]] = n
+
                 continue
             else:
-                puzzle.assign(tmp)
+                puzzle.assign(tmp) # save changes
                 return True    
     return False
 
