@@ -1,7 +1,8 @@
 
 import sys
-import random
-import operator
+#import random
+#import operator
+import time
 
 class SudokuPuzzle:
     ''' Utils for initializing and solving a sudoku puzzle
@@ -243,18 +244,18 @@ def GuessAndCheck(puzzle:SudokuPuzzle, res:dict={}):
         if (puzzle[coord[0]][coord[1]] == 0) and len(ls) == 0:
             return False    
 
-    solved = {coord: ls[0] for coord, ls in res.items() if len(ls) == 1}
-    while (len(solved) > 0):
-        for coord, n in solved.items():
-            puzzle[coord[0]][coord[1]] = n
-            res[coord].remove(n)
-        # invalid "solutions" may exist in the results list: this can happen because after trying to reduce the puzzle, there is no way to avoid a conflict
-        if (not puzzle.is_valid()):
-            return False
-        elif (puzzle.solved()):
-            return True
-        #res = puzzle.get_possibilities()
-        solved = {coord: ls[0] for coord, ls in res.items() if len(ls) == 1}
+    #solved = {coord: ls[0] for coord, ls in res.items() if len(ls) == 1}
+    #while (len(solved) > 0):
+    #    for coord, n in solved.items():
+    #        puzzle[coord[0]][coord[1]] = n
+    #        res[coord].remove(n)
+    #    # invalid "solutions" may exist in the results list: this can happen because after trying to reduce the puzzle, there is no way to avoid a conflict
+    #    if (not puzzle.is_valid()):
+    #        return False
+    #    elif (puzzle.solved()):
+    #        return True
+    #    #res = puzzle.get_possibilities()
+    #    solved = {coord: ls[0] for coord, ls in res.items() if len(ls) == 1}
 
     print('')
     puzzle.print()
@@ -301,6 +302,7 @@ def GuessAndCheck(puzzle:SudokuPuzzle, res:dict={}):
                 for n, d in countdict.items():
                     if len(d) is 1:
                         tmp[d[0][0]][d[0][1]] = n
+                # look at columns
                 countdict = {key: [] for key in range(1, 10)}
                 for i, ccell in enumerate(tmp.col(coord[1])):
                     _coord = (i, coord[1])
@@ -311,6 +313,7 @@ def GuessAndCheck(puzzle:SudokuPuzzle, res:dict={}):
                 for n, d in countdict.items():
                     if len(d) is 1:
                         tmp[d[0][0]][d[0][1]] = n
+                # look at sectors
                 countdict = {key: [] for key in range(1, 10)}
                 rsector, csector = (int(coord[0]/3), int(coord[1]/3))
                 sector = tmp.sector(rsector, csector)
@@ -324,8 +327,8 @@ def GuessAndCheck(puzzle:SudokuPuzzle, res:dict={}):
                 for n, d in countdict.items():
                     if len(d) is 1:
                         tmp[d[0][0]][d[0][1]] = n
-
-                continue
+                # save deductions
+                puzzle.assign(tmp)
             else:
                 puzzle.assign(tmp) # save changes
                 return True    
@@ -334,6 +337,8 @@ def GuessAndCheck(puzzle:SudokuPuzzle, res:dict={}):
 
 def main():
     
+    start_time = time.time()
+
     for arg in sys.argv[1:]:
         print (arg)
 
@@ -352,11 +357,11 @@ def main():
     
     print('')
     puzzle.print()
-    GuessAndCheck(puzzle)
-    print('')
-    print ('---------------- solution ----------------')
-    print('')
+    GuessAndCheck(puzzle)    
+    elapsed_time = time.time() - start_time
+    print('\n---------------- solution ----------------\n')
     puzzle.print()
+    print('\nelapsed time: {0:.2f} seconds'.format(elapsed_time))
 
 if (__name__ == "__main__"):
     main()

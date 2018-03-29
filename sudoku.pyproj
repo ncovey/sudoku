@@ -12,7 +12,7 @@
     <Name>sudoku</Name>
     <RootNamespace>sudoku</RootNamespace>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
-    <CommandLineArguments>sudoku_puzzle_1.txt</CommandLineArguments>
+    <CommandLineArguments>sudoku_puzzle_easy.txt</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
