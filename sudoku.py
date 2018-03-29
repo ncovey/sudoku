@@ -230,10 +230,8 @@ class SudokuPuzzle:
 
 
 def GuessAndCheck(puzzle:SudokuPuzzle, res:dict={}):
-    
-    if (puzzle.solved()):
-        return True
-    elif (not puzzle.is_valid()):
+        
+    if (not puzzle.is_valid()):
         return False
 
     if (not res):
@@ -242,20 +240,24 @@ def GuessAndCheck(puzzle:SudokuPuzzle, res:dict={}):
     # if there are no possibilities for an unsolved cell, we have failed
     for coord, ls in res.items():
         if (puzzle[coord[0]][coord[1]] == 0) and len(ls) == 0:
-            return False    
+            return False
+    
+    tmp = SudokuPuzzle()
+    tmp.assign(puzzle)
 
-    #solved = {coord: ls[0] for coord, ls in res.items() if len(ls) == 1}
-    #while (len(solved) > 0):
-    #    for coord, n in solved.items():
-    #        puzzle[coord[0]][coord[1]] = n
-    #        res[coord].remove(n)
-    #    # invalid "solutions" may exist in the results list: this can happen because after trying to reduce the puzzle, there is no way to avoid a conflict
-    #    if (not puzzle.is_valid()):
-    #        return False
-    #    elif (puzzle.solved()):
-    #        return True
-    #    #res = puzzle.get_possibilities()
-    #    solved = {coord: ls[0] for coord, ls in res.items() if len(ls) == 1}
+    solved = {coord: ls[0] for coord, ls in res.items() if len(ls) == 1}
+    while (len(solved) > 0):
+        for coord, n in solved.items():
+            tmp[coord[0]][coord[1]] = n
+            res[coord].remove(n)
+        # invalid "solutions" may exist in the results list: this can happen because after trying to reduce the puzzle, there is no way to avoid a conflict
+        if (not tmp.is_valid()):
+            return False
+        elif (tmp.solved()):
+            puzzle.assign(tmp)
+            return True
+        #res = tmp.get_possibilities()
+        solved = {coord: ls[0] for coord, ls in res.items() if len(ls) == 1}
 
     print('')
     puzzle.print()
@@ -264,8 +266,6 @@ def GuessAndCheck(puzzle:SudokuPuzzle, res:dict={}):
     for k in sorted(res, key=lambda k: len(res.get(k))):
         sorted_res.append((k, res.get(k)))
 
-    tmp = SudokuPuzzle()
-    tmp.assign(puzzle)
     
     # Barbara's method:
     # find a sector with the most solved cells. for every row and column common to that sector, look for binary choices:
@@ -300,7 +300,7 @@ def GuessAndCheck(puzzle:SudokuPuzzle, res:dict={}):
                         if (_coord != (coord)) or n != poss:
                             countdict[n].append(_coord)
                 for n, d in countdict.items():
-                    if len(d) is 1:
+                    if (len(d) is 1): # and (tmp[d[0][0]][d[0][1]] == 0):
                         tmp[d[0][0]][d[0][1]] = n
                 # look at columns
                 countdict = {key: [] for key in range(1, 10)}
@@ -311,7 +311,7 @@ def GuessAndCheck(puzzle:SudokuPuzzle, res:dict={}):
                         if (_coord != (coord)) or n != poss:
                             countdict[n].append(_coord)
                 for n, d in countdict.items():
-                    if len(d) is 1:
+                    if (len(d) is 1): # and (tmp[d[0][0]][d[0][1]] == 0):
                         tmp[d[0][0]][d[0][1]] = n
                 # look at sectors
                 countdict = {key: [] for key in range(1, 10)}
@@ -325,7 +325,7 @@ def GuessAndCheck(puzzle:SudokuPuzzle, res:dict={}):
                             if (_coord != (coord)) or n != poss:
                                 countdict[n].append(_coord)
                 for n, d in countdict.items():
-                    if len(d) is 1:
+                    if (len(d) is 1): # and (tmp[d[0][0]][d[0][1]] == 0):
                         tmp[d[0][0]][d[0][1]] = n
                 # save deductions
                 puzzle.assign(tmp)
@@ -357,11 +357,13 @@ def main():
     
     print('')
     puzzle.print()
-    GuessAndCheck(puzzle)    
-    elapsed_time = time.time() - start_time
-    print('\n---------------- solution ----------------\n')
-    puzzle.print()
-    print('\nelapsed time: {0:.2f} seconds'.format(elapsed_time))
+    if (not GuessAndCheck(puzzle)):
+        print('failed to find solution')
+    else:
+        elapsed_time = time.time() - start_time
+        print('\n---------------- solution ----------------\n')
+        puzzle.print()
+        print('\nelapsed time: {0:.2f} seconds'.format(elapsed_time))
 
 if (__name__ == "__main__"):
     main()
