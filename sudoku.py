@@ -256,11 +256,11 @@ def GuessAndCheck(puzzle:SudokuPuzzle, res:dict={}):
         elif (tmp.solved()):
             puzzle.assign(tmp)
             return True
-        #res = tmp.get_possibilities()
+        res = tmp.get_possibilities()
         solved = {coord: ls[0] for coord, ls in res.items() if len(ls) == 1}
 
-    print('')
-    puzzle.print()
+    #print('')
+    #puzzle.print()
 
     sorted_res = []
     for k in sorted(res, key=lambda k: len(res.get(k))):
