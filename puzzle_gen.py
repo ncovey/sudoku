@@ -40,7 +40,11 @@ def generate_random(randpuzzle:sudoku.SudokuPuzzle):
                     possible_values = [x for x in range(1, 10)]
                     randidx = random.randint(0, len(possible_values)-1)
                     val = possible_values[randidx]
-                    while ((val in randpuzzle.row(r)) or (val in randpuzzle.col(c)) or (val in randpuzzle.get_sector_from_coord(r, c))):
+                    _row = randpuzzle.row(r)
+                    _col = randpuzzle.col(c)
+                    _sec = randpuzzle.get_sector_from_coord(r, c)
+                    _sec_list = [i for sublist in _sec for i in sublist]
+                    while ((val in _row) or (val in _col) or (val in _sec_list)):
                         possible_values.remove(val)
                         if len(possible_values) == 0:
                             bValid = False
