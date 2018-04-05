@@ -58,9 +58,11 @@ def generate_random(randpuzzle:sudoku.SudokuPuzzle):
                 break
 
 def find_solution(puzzle:sudoku.SudokuPuzzle, q:multiprocessing.Queue):
-    bSolved = sudoku.GuessAndCheck(puzzle)
+    solutions = []
+    bSolved = sudoku.GuessAndCheck(puzzle, {}, solutions)
     q.put(bSolved)
     q.put(puzzle)
+    q.put(solutions)
 
 def main():
 
@@ -83,10 +85,19 @@ def main():
         else:
             bFound = q.get()
             tmp = q.get()
+            solutions = q.get()
+            print(bFound, solutions)
             if (bFound == True):
-                q.close()
-                q.join_thread()
-                break
+                if ((len(solutions) > 0) and (len(solutions) != 1)):
+                    print('MULTIPLE SOLUTIONS FOUND!!!')
+                    for n, s in enumerate(solutions):
+                        print('{}'.format(n))
+                        s.print()
+                    continue
+                else:
+                    q.close()
+                    q.join_thread()
+                    break
 
         print("could not find a solution to puzzle... restarting\n")
         randpuzzle.reset()

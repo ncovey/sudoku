@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>cea68b35-5d53-468e-a0ae-762b226b528c</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>puzzle_gen.py</StartupFile>
+    <StartupFile>sudoku.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>

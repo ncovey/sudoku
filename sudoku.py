@@ -8,7 +8,6 @@ class SudokuPuzzle:
     '''
     def __init__(self, line:str=''):
         self.__data = []
-        #self.__sema = threading.Semaphore()
         if (line != ''):
             if (len(line) != 81):
                 raise Exception('puzzle does not have 81 elements')
@@ -92,6 +91,15 @@ class SudokuPuzzle:
     def __getitem__(self, key):
         return self.__data[key]
 
+    def __eq__(self, other):
+        if (other != None):
+            for r, row in enumerate(self.__data):
+                for c, n in enumerate(row):
+                    if (n != other[r][c]):
+                        return False
+            return True
+        return False
+
     def __row_possibilities(self, __resultDict):
         #nRes = 1
         for r, row in enumerate(self.__data):
@@ -174,22 +182,9 @@ class SudokuPuzzle:
                 else:
                     __resultDict[c] = []
 
-        #row_thread = threading.Thread(group=None, target=self.__row_possibilities, args=(__resultDict,))
-        #col_thread = threading.Thread(group=None, target=self.__col_possibilities, args=(__resultDict,))
-        #sec_thread = threading.Thread(group=None, target=self.__sector_possibilities, args=(__resultDict,))
-
-        #row_thread.start()
-        #col_thread.start()
-        #sec_thread.start()
-
-        #row_thread.join()
-        #col_thread.join()
-        #sec_thread.join()
-
         self.__row_possibilities(__resultDict)
         self.__col_possibilities(__resultDict)
         self.__sector_possibilities(__resultDict)
-
         # look at rows, columns, sectors and see if any particular number has only one possible position
         #### Rows ####
         for ridx, row in enumerate(self.__data):
@@ -270,7 +265,7 @@ class SudokuPuzzle:
                 self.__data[ridx].append(itm)
 
 
-def GuessAndCheck(puzzle:SudokuPuzzle, res:dict={}):
+def GuessAndCheck(puzzle:SudokuPuzzle, res:dict={}, solutions:list=None):
         
     if (not puzzle.is_valid()):
         return False
@@ -296,6 +291,15 @@ def GuessAndCheck(puzzle:SudokuPuzzle, res:dict={}):
             return False
         elif (tmp.solved()):
             puzzle.assign(tmp)
+            if (solutions != None):
+                if (puzzle not in solutions):
+                    _temp = SudokuPuzzle()
+                    _temp.assign(puzzle)
+                    solutions.append(_temp)
+                    print('')
+                    _temp.print()
+                else:
+                    return False
             return True
         res = tmp.get_possibilities()
         solved = {coord: ls[0] for coord, ls in res.items() if len(ls) == 1}
@@ -303,9 +307,10 @@ def GuessAndCheck(puzzle:SudokuPuzzle, res:dict={}):
     #print('')
     #puzzle.print()
 
-    sorted_res = []
-    for k in sorted(res, key=lambda k: len(res.get(k))):
-        sorted_res.append((k, res.get(k)))
+    sorted_res = res
+    #sorted_res = []
+    #for k in sorted(res, key=lambda k: len(res.get(k))):
+    #    sorted_res.append((k, res.get(k)))
 
     # Barbara's method:
     # find a sector with the most solved cells. for every row and column common to that sector, look for binary choices:
@@ -323,8 +328,8 @@ def GuessAndCheck(puzzle:SudokuPuzzle, res:dict={}):
     for cls in sorted_res:
         if (not cls[1]):
             continue
-        x,y = cls[0]
-        ls    = cls[1]
+        x,y = cls #[0]
+        ls    = cls #[1]
         for poss in ls:
             tmp[x][y] = poss
             if (not GuessAndCheck(tmp)):
@@ -372,6 +377,16 @@ def GuessAndCheck(puzzle:SudokuPuzzle, res:dict={}):
                 puzzle.assign(tmp)
             else:
                 puzzle.assign(tmp) # save changes
+                if (puzzle.solved()):
+                    if (solutions != None):
+                        if (puzzle not in solutions):
+                            _temp = SudokuPuzzle()
+                            _temp.assign(puzzle)
+                            solutions.append(_temp)
+                            print('')
+                            _temp.print()
+                        else:
+                            return False
                 return True    
     return False
 
@@ -398,7 +413,9 @@ def main():
     
     print('')
     puzzle.print()
-    if (not GuessAndCheck(puzzle)):
+
+    solutions = []
+    if (not GuessAndCheck(puzzle, {}, solutions)):
         print('failed to find solution')
     else:
         elapsed_time = time.time() - start_time
