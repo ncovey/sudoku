@@ -1,14 +1,14 @@
 
 import sys
-#import random
-#import operator
 import time
+import threading
 
 class SudokuPuzzle:
     ''' Utils for initializing and solving a sudoku puzzle
     '''
     def __init__(self, line:str=''):
         self.__data = []
+        #self.__sema = threading.Semaphore()
         if (line != ''):
             if (len(line) != 81):
                 raise Exception('puzzle does not have 81 elements')
@@ -25,6 +25,11 @@ class SudokuPuzzle:
                     row = []
             if (len(self.__data) != 9):
                 raise Exception('puzzle does not have 9 rows')
+
+    def reset(self):
+        for r, row in enumerate(self.__data):
+            for c, n in enumerate(row):
+                self[r][c] = 0
 
     def solved(self):
         if (not self.is_valid()):
@@ -69,6 +74,13 @@ class SudokuPuzzle:
             if (((ridx + 1) != len(self.__data)) and (ridx + 1) % 3 == 0):
                 print('-------+-------+-------')
 
+    def printline(self):
+        line = ''
+        for ridx, row in enumerate(self.__data):
+            for n in row:
+                line += (str(n))
+        print(line)
+
     def printsector(self, n):
         sector = self.getsector(n)
         for row in sector:
@@ -80,55 +92,45 @@ class SudokuPuzzle:
     def __getitem__(self, key):
         return self.__data[key]
 
-    def get_possibilities(self):
-        ''' Create a dictionary indexed by cell coordinates and a list of possible values. If a cell has a list of size 1, that cell is "solved"
-            Look at puzzle and find solved cells.
-            Look at all rows and remove solved cell values from cell lists in same row
-            Look at all columns and remove solved cell values from cell lists in the same column
-            Look at all sectors and remove all solved cell values from cell lists in the same sector
-        '''
-        __resultDict = {}
-        for nRow in range(0, 9):
-            for nCol in range(0, 9):
-                c = (nRow, nCol)
-                res = list(range(1, 10))
-                if self[nRow][nCol] == 0:
-                    __resultDict[c] = res
-                else:
-                    __resultDict[c] = []
-        # look at rows
-        nRes = 1
-        for r in range(0, 9):
-            row = self[r]
+    def __row_possibilities(self, __resultDict):
+        #nRes = 1
+        for r, row in enumerate(self.__data):
             lres = []
-            for c in range(0, 9):
-                if (row[c] != 0):
-                    lres.append(row[c])
-                    #print('[{}] {} : ({},{}) -> {}'.format(nRes, row[c], r, c, __resultDict.get((r, c)))); nRes += 1;
+            for c, n in enumerate(row):
+                if (n != 0):
+                    lres.append(n)
+                    #print('[{}] {} : ({},{}) -> {}'.format(nRes, n, r, c, __resultDict.get((r, c)))); nRes += 1;
             for result in lres:
                 for c in range(0, 9):
+                    #self.__sema.acquire()
                     ls = __resultDict.get((r, c))
                     if (result in ls):
                         #before = ls[:]
                         ls.remove(result)
                         #print('({}, {}) {} : {} remove {} ==> {}'.format(r, c, self[r][c], before, result, ls))
-        # look at columns
-        nRes = 1
+                    #self.__sema.release()
+
+
+    def __col_possibilities(self, __resultDict):
+        #nRes = 1
         for c in range(0, 9):
             col = self.col(c)
             lres = []
-            for r in range(0, 9):
+            for r, _row in enumerate(self.__data):
                 if (col[r] != 0):
                     lres.append(col[r])
                     #print('[{}] {} : ({},{}) -> {}'.format(nRes, col[r], r, c, __resultDict.get((r, c)))); nRes += 1;
             for result in lres:
-                for r in range(0, 9):
+                for r, _row in enumerate(self.__data):
+                    #self.__sema.acquire()
                     ls = __resultDict.get((r, c))
                     if (result in ls):
                         #before = ls[:]
                         ls.remove(result)
                         #print('({}, {}) {} : {} remove {} ==> {}'.format(r, c, self[r][c], before, result, ls))
-        # look at sectors
+                    #self.__sema.release()
+
+    def __sector_possibilities(self, __resultDict):
         nRes = 1
         for i in range(0, 3):
             for j in range(0, 3):
@@ -146,13 +148,50 @@ class SudokuPuzzle:
                         for c in range(0, 3):
                             x = i*3+r
                             y = j*3+c
+                            #self.__sema.acquire()
                             ls = __resultDict.get((x,y))
                             if (result in ls):
                                 before = ls[:]
                                 ls.remove(result)
                                 #print('sector[{},{}]@({},{}) ({}, {}) {} : {} remove {} ==> {}'.format(i, j, r, c, x, y, self[x][y], before, result, ls))
+                            #self.__sema.release()
+
+
+    def get_possibilities(self):
+        ''' Create a dictionary indexed by cell coordinates and a list of possible values. If a cell has a list of size 1, that cell is "solved"
+            Look at puzzle and find solved cells.
+            Look at all rows and remove solved cell values from cell lists in same row
+            Look at all columns and remove solved cell values from cell lists in the same column
+            Look at all sectors and remove all solved cell values from cell lists in the same sector
+        '''
+        __resultDict = {}
+        for nRow, _row in enumerate(self.__data):
+            for nCol, _col in enumerate(_row):
+                c = (nRow, nCol)
+                res = list(range(1, 10))
+                if self[nRow][nCol] == 0:
+                    __resultDict[c] = res
+                else:
+                    __resultDict[c] = []
+
+        #row_thread = threading.Thread(group=None, target=self.__row_possibilities, args=(__resultDict,))
+        #col_thread = threading.Thread(group=None, target=self.__col_possibilities, args=(__resultDict,))
+        #sec_thread = threading.Thread(group=None, target=self.__sector_possibilities, args=(__resultDict,))
+
+        #row_thread.start()
+        #col_thread.start()
+        #sec_thread.start()
+
+        #row_thread.join()
+        #col_thread.join()
+        #sec_thread.join()
+
+        self.__row_possibilities(__resultDict)
+        self.__col_possibilities(__resultDict)
+        self.__sector_possibilities(__resultDict)
+
         # look at rows, columns, sectors and see if any particular number has only one possible position
-        # rows
+        #### Rows ####
         for ridx, row in enumerate(self.__data):
             # count the number of occurences in a line
             countdict = {key: [] for key in range(1, 10)}
@@ -166,7 +205,8 @@ class SudokuPuzzle:
                     if (n not in self.col(y)) and (n not in self.get_sector_from_coord(x, y)):
                         #print('{} is unique to cell {} : {}'.format(n, (x, y), __resultDict.get((x, y))))
                         __resultDict[(x, y)] = [n]
-        for cidx in range(0, 8):
+        #### Columns ####
+        for cidx in range(0, 9):
             countdict = {key: [] for key in range(1, 10)}
             col = self.col(cidx)
             for ridx, n in enumerate(col):
@@ -179,6 +219,7 @@ class SudokuPuzzle:
                     if (n not in self.row(x)) and (n not in self.get_sector_from_coord(x, y)):
                         #print('{} is unique to cell {} : {}'.format(n, (x, y), __resultDict.get((x, y))))
                         __resultDict[(x, y)] = [n]
+        #### Sectors ####
         for i in range(0, 3):
             for j in range(0, 3):
                 sect = self.sector(i, j)
@@ -266,7 +307,6 @@ def GuessAndCheck(puzzle:SudokuPuzzle, res:dict={}):
     for k in sorted(res, key=lambda k: len(res.get(k))):
         sorted_res.append((k, res.get(k)))
 
-    
     # Barbara's method:
     # find a sector with the most solved cells. for every row and column common to that sector, look for binary choices:
     #       0 1 2   3 4 5   6 7 8
@@ -283,29 +323,30 @@ def GuessAndCheck(puzzle:SudokuPuzzle, res:dict={}):
     for cls in sorted_res:
         if (not cls[1]):
             continue
-        coord = cls[0]
+        x,y = cls[0]
         ls    = cls[1]
-        ##### Make Assumption: #####
         for poss in ls:
-            tmp[coord[0]][coord[1]] = poss
+            tmp[x][y] = poss
             if (not GuessAndCheck(tmp)):
                 tmp.assign(puzzle) # undo changes
                 ls.remove(poss)
+                if (len(ls) < 1):
+                    break
                 # look at rows:
                 countdict = {key: [] for key in range(1, 10)}
-                for i, rcell in enumerate(tmp.row(coord[0])):
-                    _coord = (coord[0], i)
+                for i, rcell in enumerate(tmp.row(x)):
+                    _coord = (x, i)
                     l = res.get(_coord)
                     for n in l:
-                        if (_coord != (coord)) or n != poss:
+                        if (_coord != (x,y)) or n != poss:
                             countdict[n].append(_coord)
                 for n, d in countdict.items():
                     if (len(d) is 1): # and (tmp[d[0][0]][d[0][1]] == 0):
                         tmp[d[0][0]][d[0][1]] = n
                 # look at columns
                 countdict = {key: [] for key in range(1, 10)}
-                for i, ccell in enumerate(tmp.col(coord[1])):
-                    _coord = (i, coord[1])
+                for i, ccell in enumerate(tmp.col(y)):
+                    _coord = (i, y)
                     l = res.get(_coord)
                     for n in l:
                         if (_coord != (coord)) or n != poss:
@@ -315,14 +356,14 @@ def GuessAndCheck(puzzle:SudokuPuzzle, res:dict={}):
                         tmp[d[0][0]][d[0][1]] = n
                 # look at sectors
                 countdict = {key: [] for key in range(1, 10)}
-                rsector, csector = (int(coord[0]/3), int(coord[1]/3))
+                rsector, csector = (int(x/3), int(y/3))
                 sector = tmp.sector(rsector, csector)
                 for r, scell in enumerate(sector):
                     for c, cell in enumerate(scell):
                         _coord = (rsector*3+r, csector*3+c)
                         l = res.get(_coord)
                         for n in l:
-                            if (_coord != (coord)) or n != poss:
+                            if (_coord != (x,y)) or n != poss:
                                 countdict[n].append(_coord)
                 for n, d in countdict.items():
                     if (len(d) is 1): # and (tmp[d[0][0]][d[0][1]] == 0):
